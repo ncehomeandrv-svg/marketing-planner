@@ -1,0 +1,2 @@
+import { NextResponse } from 'next/server';import { microsoftAuthorizeUrl,microsoftConfigured } from '@/lib/microsoft';
+export async function GET(){if(!microsoftConfigured())return NextResponse.json({error:'Microsoft or KV variables are missing.'},{status:500});const state=crypto.randomUUID();const response=NextResponse.redirect(microsoftAuthorizeUrl(state));response.cookies.set('nce_ms_oauth_state',state,{httpOnly:true,secure:true,sameSite:'lax',maxAge:600,path:'/'});return response}

@@ -1,0 +1,6 @@
+import { NextResponse } from 'next/server';
+import { kvCommand, kvConfigured } from '@/lib/kv';
+import type { PublishFailure } from '@/lib/types';
+const KEY='nce:publish-failures';
+async function read():Promise<PublishFailure[]>{if(!kvConfigured()) return [];const raw=await kvCommand<string|null>(['GET',KEY]);return raw?JSON.parse(raw):[]}
+export async function POST(request:Request){try{const {id}=await request.json();const items=await read();const failure=items.find(item=>item.id===id);if(!failure||!failure.endpoint||!failure.payload) return NextResponse.json({error:'Retry data is unavailable.'},{status:400});const origin=new URL(request.url).origin;const response=await fetch(`${origin}${failure.endpoint}`,{method:'POST',headers:{Authorization:`Bearer ${process.env.QSTASH_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(failure.payload)});const result=await response.json().catch(()=>({}));if(!response.ok) throw new Error(result.error||'Retry failed');const next=items.map(item=>item.id===id?{...item,resolvedAt:new Date().toISOString(),retryCount:(item.retryCount||0)+1}:item);if(kvConfigured()) await kvCommand(['SET',KEY,JSON.stringify(next)]);return NextResponse.json({ok:true,result})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:'Retry failed'},{status:500})}}
