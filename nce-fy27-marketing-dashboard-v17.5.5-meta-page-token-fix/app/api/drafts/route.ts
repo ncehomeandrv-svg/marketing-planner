@@ -45,6 +45,7 @@ async function sendWorkflowNotification(request: Request, previous: PlannerItem 
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error || `Workflow notification failed (${response.status})`);
+  if (body.emailError) throw new Error(body.emailError);
   return body;
 }
 
@@ -106,7 +107,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ configured: true, item, workflowNotification: workflowNotificationResult, workflowNotificationError });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to save draft' }, { status: 500 }); }
 }
-
 
 export async function DELETE(request: Request) {
   try {
