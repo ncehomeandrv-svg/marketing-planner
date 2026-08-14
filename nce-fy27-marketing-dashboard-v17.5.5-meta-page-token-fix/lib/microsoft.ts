@@ -28,14 +28,42 @@ export async function exchangeCode(code:string){
 }
 export async function readMicrosoftToken():Promise<StoredToken|null>{if(!kvConfigured())return null;const raw=await kvCommand<string|null>(['GET',TOKEN_KEY]);return raw?JSON.parse(raw):null}
 export async function disconnectMicrosoft(){if(kvConfigured())await kvCommand(['DEL',TOKEN_KEY])}
-export async function validAccessToken(){
-  let token=await readMicrosoftToken();if(!token)return null;if(token.expiresAt>Date.now())return token;
+
+async function refreshMicrosoftToken(token:StoredToken){
   if(!token.refreshToken)return null;
   const body=await tokenRequest(new URLSearchParams({client_id:process.env.MICROSOFT_CLIENT_ID!,client_secret:process.env.MICROSOFT_CLIENT_SECRET!,grant_type:'refresh_token',refresh_token:token.refreshToken,redirect_uri:process.env.MICROSOFT_REDIRECT_URI!,scope:SCOPES}));
-  token={...token,accessToken:body.access_token,refreshToken:body.refresh_token||token.refreshToken,expiresAt:Date.now()+Number(body.expires_in||3600)*1000-60000};await kvCommand(['SET',TOKEN_KEY,JSON.stringify(token)]);return token;
+  const refreshed:StoredToken={...token,accessToken:body.access_token,refreshToken:body.refresh_token||token.refreshToken,expiresAt:Date.now()+Number(body.expires_in||3600)*1000-60000};
+  await kvCommand(['SET',TOKEN_KEY,JSON.stringify(refreshed)]);
+  return refreshed;
 }
+
+export async function validAccessToken(forceRefresh=false){
+  const token=await readMicrosoftToken();
+  if(!token)return null;
+  if(!forceRefresh&&token.expiresAt>Date.now())return token;
+  return refreshMicrosoftToken(token);
+}
+
+async function graphSend(token:StoredToken,to:string,subject:string,html:string){
+  return fetch('https://graph.microsoft.com/v1.0/me/sendMail',{method:'POST',headers:{Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({message:{subject,body:{contentType:'HTML',content:html},toRecipients:[{emailAddress:{address:to}}]},saveToSentItems:true}),cache:'no-store'});
+}
+
 export async function sendOutlookNotification(to:string,subject:string,html:string){
-  const token=await validAccessToken();if(!token)throw new Error('Outlook is not connected.');
-  const response=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{method:'POST',headers:{Authorization:`Bearer ${token.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({message:{subject,body:{contentType:'HTML',content:html},toRecipients:[{emailAddress:{address:to}}]},saveToSentItems:true}),cache:'no-store'});
-  if(!response.ok){const text=await response.text();throw new Error(`Microsoft Graph send failed (${response.status}): ${text}`)}
+  let token=await validAccessToken();
+  if(!token)throw new Error('Outlook is not connected.');
+
+  let response=await graphSend(token,to,subject,html);
+
+  // Microsoft can revoke an access token before its locally calculated expiry.
+  // If Graph rejects authentication, refresh once and retry the same message.
+  if(response.status===401){
+    token=await validAccessToken(true);
+    if(!token)throw new Error('Outlook authorisation expired. Reconnect Outlook.');
+    response=await graphSend(token,to,subject,html);
+  }
+
+  if(!response.ok){
+    const text=await response.text();
+    throw new Error(`Microsoft Graph send failed (${response.status}): ${text}`);
+  }
 }
