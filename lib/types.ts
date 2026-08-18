@@ -1,10 +1,11 @@
 export type Channel = 'Email'|'Organic'|'LinkedIn'|'Website'|'Print'|'Video'|'Research'|'Operations'|'Other';
 export type Segment = 'OEM'|'Dealer'|'Retail'|'Repairer'|'Commercial'|'Multiple';
-export type Status = 'Brief Required'|'Brief Ready'|'In Production'|'Ready for Review'|'Changes Required'|'Approved'|'Scheduled'|'Published'|'Blocked';
+export type Status = 'Brief Required'|'Brief Ready'|'In Production'|'Internal Review'|'Ready for Review'|'Changes Required'|'Approved'|'Scheduled'|'Published'|'Blocked';
 export type ApprovalStatus = 'Not required'|'Awaiting approval'|'Changes requested'|'Approved';
 export type ItemType = 'campaign'|'ticket'|'important-date'|'strategy';
 export type Priority = 'Low'|'Normal'|'High'|'Urgent';
 export type Quarter = 'Q1'|'Q2'|'Q3'|'Q4';
+export type ContentFormat = 'EDM'|'Meta Static'|'Meta Carousel'|'Meta Video'|'Google Ads Asset'|'Landing Page'|'Website Update'|'Product Page'|'Flyer'|'Sales Email'|'Internal Comms'|'Blog'|'Video'|'Research'|'Other';
 
 export interface Attachment {
   id:string;
@@ -32,6 +33,23 @@ export interface MetaMediaAsset {
   uploadedAt:string;
 }
 
+export interface PlannerChecklistItem {
+  id:string;
+  label:string;
+  done:boolean;
+}
+
+export interface PlannerPerformance {
+  revenue?:number;
+  purchases?:number;
+  clicks?:number;
+  impressions?:number;
+  spend?:number;
+  opens?:number;
+  emailClicks?:number;
+  sessions?:number;
+  notes?:string;
+}
 
 export interface PlannerComment {
   id:string;
@@ -74,7 +92,9 @@ export interface PlannerItem {
   type:ItemType;
   date:string;
   endDate?:string;
+  creativeDueDate?:string;
   channel:Channel;
+  contentFormat?:ContentFormat;
   segment:Segment;
   status:Status;
   owner:string;
@@ -90,6 +110,12 @@ export interface PlannerItem {
   strategyCode?:string;
   cadence?:string;
   source?:'FY27 Strategy'|'Retail Calendar'|'Monthly Content Plan';
+  parentCampaignId?:string;
+  productSkus?:string[];
+  checklist?:PlannerChecklistItem[];
+  dependencyIds?:string[];
+  templateName?:string;
+  performance?:PlannerPerformance;
   attachments?:Attachment[];
   dotdigitalCampaignId?:number;
   dotdigitalCampaignName?:string;
