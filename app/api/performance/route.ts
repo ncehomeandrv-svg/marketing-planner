@@ -37,22 +37,30 @@ async function organicMeta(payload:any){
         safeMetric(`/${fbId}/insights`,'post_engaged_users',pageToken),
         facebookReactionCount(fbId,pageToken),
       ]);
-      const embeddedReactions=Number(row?.reactions?.summary?.total_count||0);const reactions=reactionResult.count??embeddedReactions;const comments=Number(row?.comments?.summary?.total_count||0),shares=Number(row?.shares?.count||0);
-      if(impressions)performance.impressions=(performance.impressions||0)+impressions;
-      if(reach)performance.reach=(performance.reach||0)+reach;
-      performance.reactions=(performance.reactions||0)+reactions;
-      performance.comments=(performance.comments||0)+comments;
-      performance.shares=(performance.shares||0)+shares;
-      performance.engagements=(performance.engagements||0)+Math.max(engaged,reactions+comments+shares);
+      const embeddedReactions=Number(row?.reactions?.summary?.total_count||0);const reactions=reactionResult.count??embeddedReactions;const comments=Number(row?.comments?.summary?.total_count||0),shares=Number(row?.shares?.count||0);const fbEngagements=Math.max(engaged,reactions+comments+shares);
+      Object.assign(performance,{facebookReach:reach,facebookViews:impressions,facebookImpressions:impressions,facebookReactions:reactions,facebookComments:comments,facebookShares:shares,facebookEngagements:fbEngagements});
+      performance.reach=(performance.reach||0)+reach;performance.impressions=(performance.impressions||0)+impressions;performance.reactions=(performance.reactions||0)+reactions;performance.comments=(performance.comments||0)+comments;performance.shares=(performance.shares||0)+shares;performance.engagements=(performance.engagements||0)+fbEngagements;
       sources.facebook={matched:1,postId:fbId,matchedBy:fbMatch,reactionSource:reactionResult.count===null?'embedded-summary':'reactions-edge',reactions};
       if(reactionResult.count===null)warnings.push(`Facebook matched post ${fbId} via ${fbMatch}, but the reactions edge was unavailable (${reactionResult.error}). Embedded reaction total used: ${embeddedReactions}.`);
-      else warnings.push(`Facebook matched post ${fbId} via ${fbMatch}. Reactions edge returned ${reactionResult.count}.`);
-      if(!impressions&&!reach&&!engaged)warnings.push('Facebook: post matched, but Meta did not expose Page-post insight metrics for this post type. Reactions, comments and shares were still pulled.');
+      if(!impressions&&!reach&&!engaged)warnings.push('Facebook: post matched, but Meta did not expose Page-post reach/impression insights for this post type. Reactions, comments and shares were still pulled.');
     }catch(error:any){warnings.push(`Facebook post metrics: ${error?.message||'unavailable'}`)}
   }else if(config.pageId){warnings.push('Facebook: no published post matched this ticket in the selected date range.')}
-  if(igId){try{const row=await metaFetch(`/${igId}?fields=id,media_type,like_count,comments_count`);const [reach,views,totalInteractions,saved,shares]=await Promise.all([safeMetric(`/${igId}/insights`,'reach'),safeMetric(`/${igId}/insights`,'views'),safeMetric(`/${igId}/insights`,'total_interactions'),safeMetric(`/${igId}/insights`,'saved'),safeMetric(`/${igId}/insights`,'shares')]);const likes=Number(row?.like_count||0),comments=Number(row?.comments_count||0);performance.reach=(performance.reach||0)+reach;performance.views=(performance.views||0)+views;performance.likes=(performance.likes||0)+likes;performance.comments=(performance.comments||0)+comments;performance.saves=(performance.saves||0)+saved;performance.shares=(performance.shares||0)+shares;performance.engagements=(performance.engagements||0)+Math.max(totalInteractions,likes+comments+saved+shares);if(String(row?.media_type||'').includes('VIDEO')||String(row?.media_type||'').includes('REELS'))performance.videoViews=(performance.videoViews||0)+views;sources.instagram={matched:1,mediaId:igId,matchedBy:igMatch}}catch(error:any){warnings.push(`Instagram insights: ${error?.message||'unavailable'}`)}}
+  if(igId){
+    try{
+      const row=await metaFetch(`/${igId}?fields=id,media_type,like_count,comments_count`);
+      const [reach,views,totalInteractions,saved,shares]=await Promise.all([safeMetric(`/${igId}/insights`,'reach'),safeMetric(`/${igId}/insights`,'views'),safeMetric(`/${igId}/insights`,'total_interactions'),safeMetric(`/${igId}/insights`,'saved'),safeMetric(`/${igId}/insights`,'shares')]);
+      const likes=Number(row?.like_count||0),comments=Number(row?.comments_count||0),igEngagements=Math.max(totalInteractions,likes+comments+saved+shares);
+      Object.assign(performance,{instagramReach:reach,instagramViews:views,instagramLikes:likes,instagramComments:comments,instagramSaves:saved,instagramShares:shares,instagramEngagements:igEngagements});
+      performance.reach=(performance.reach||0)+reach;performance.views=(performance.views||0)+views;performance.likes=(performance.likes||0)+likes;performance.comments=(performance.comments||0)+comments;performance.saves=(performance.saves||0)+saved;performance.shares=(performance.shares||0)+shares;performance.engagements=(performance.engagements||0)+igEngagements;
+      if(String(row?.media_type||'').includes('VIDEO')||String(row?.media_type||'').includes('REELS'))performance.videoViews=(performance.videoViews||0)+views;
+      sources.instagram={matched:1,mediaId:igId,matchedBy:igMatch};
+    }catch(error:any){warnings.push(`Instagram insights: ${error?.message||'unavailable'}`)}
+  }else if(config.instagramId){warnings.push('Instagram: no published media matched this ticket in the selected date range.')}
+  performance.combinedOrganicEngagement=(performance.facebookEngagements||0)+(performance.instagramEngagements||0);
+  performance.engagements=performance.combinedOrganicEngagement;
   if(performance.reach)performance.engagementRate=(performance.engagements||0)/performance.reach;
-  const matchedSourceCount=Object.values(sources).length;return {connected:true,start,end,performance,sources,warnings,matchedSourceCount,confidence:matchedSourceCount>=2?'high':matchedSourceCount===1?'medium':'low',note:'Organic social only. Paid Meta advertising is intentionally excluded.'};
+  const matchedSourceCount=Object.values(sources).filter((source:any)=>Number(source?.matched||0)>0).length;
+  return {connected:true,start,end,performance,sources,warnings,matchedSourceCount,confidence:matchedSourceCount>=2?'high':matchedSourceCount===1?'medium':'low',note:'Organic social only. Paid Meta advertising is intentionally excluded.'};
 }
 
 export async function POST(request:NextRequest){
