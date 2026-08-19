@@ -21,6 +21,14 @@ export interface PlannerPerformance {
   conversionRate?:number;
   productViews?:number;
   addToCarts?:number;
+  engagedSessions?:number;
+  averageSessionDuration?:number;
+  // Merchant Centre (used as a supporting product cross-reference for blogs/content)
+  merchantClicks?:number;
+  merchantImpressions?:number;
+  merchantCtr?:number;
+  merchantConversions?:number;
+  merchantConversionValue?:number;
   // Email / Dotdigital
   sent?:number;
   delivered?:number;
