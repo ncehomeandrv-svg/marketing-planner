@@ -24,8 +24,6 @@ async function organicMeta(payload:any){
     try{
       const pageToken=await resolveFacebookPageToken();
       const row=await metaFetch(`/${fbId}?fields=id,shares,reactions.limit(0).summary(true),comments.limit(0).summary(true)`,{},pageToken);
-      // Meta changes Page-post insight availability by post/object type and Graph version.
-      // Pull each metric separately so one unsupported metric never invalidates the entire post result.
       const [impressions,reach,engaged]=await Promise.all([
         safeMetric(`/${fbId}/insights`,'post_impressions',pageToken),
         safeMetric(`/${fbId}/insights`,'post_impressions_unique',pageToken),
@@ -50,6 +48,8 @@ async function organicMeta(payload:any){
 export async function POST(request:NextRequest){
   try{
     const payload=await request.json();
+    const blogText=[payload?.description,payload?.notes,payload?.title].map(clean).join(' ');
+    if(/https?:\/\/(?:www\.)?nce\.com\.au\/blog\//i.test(blogText))payload.contentFormat='Blog';
     const channel=clean(payload?.channel),format=clean(payload?.contentFormat);
     if(channel==='Organic'||['Meta Static','Meta Carousel','Meta Video'].includes(format))return Response.json(await organicMeta(payload));
     if(channel==='LinkedIn')return Response.json({connected:true,start:payload.start,end:payload.end,performance:{},sources:{},warnings:['LinkedIn organic analytics are not yet available through the current LinkedIn app permissions.'],matchedSourceCount:0,confidence:'low',note:'LinkedIn tickets use LinkedIn-specific metrics only; no paid advertising data is substituted.'});
