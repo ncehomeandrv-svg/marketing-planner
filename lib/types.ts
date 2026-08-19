@@ -49,6 +49,11 @@ export interface PlannerPerformance {
   emailClicks?:number;
   sessions?:number;
   notes?:string;
+  analyticsLastSyncedAt?:string;
+  analyticsConfidence?:'high'|'medium'|'low';
+  analyticsWindowStart?:string;
+  analyticsWindowEnd?:string;
+  analyticsSources?:string[];
 }
 
 export interface PlannerComment {
