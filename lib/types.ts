@@ -23,7 +23,11 @@ export interface PlannerPerformance {
   addToCarts?:number;
   engagedSessions?:number;
   averageSessionDuration?:number;
-  // Merchant Centre (used as a supporting product cross-reference for blogs/content)
+  // Blog / page performance
+  engagementTime?:number;
+  viewsPerUser?:number;
+  averageEngagementTime?:number;
+  // Merchant Centre legacy fields retained for old tickets
   merchantClicks?:number;
   merchantImpressions?:number;
   merchantCtr?:number;
@@ -41,7 +45,7 @@ export interface PlannerPerformance {
   unsubscribeRate?:number;
   bounces?:number;
   bounceRate?:number;
-  // Organic social
+  // Organic social / general content
   reach?:number;
   impressions?:number;
   views?:number;
