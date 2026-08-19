@@ -21,4 +21,9 @@
 .future-date-row button:hover{border-color:var(--red);background:#262626}
 .future-date-row button b{font:800 9px 'Lexend';color:var(--red)}
 .future-date-row button span{font:650 9px 'Lexend';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.priority-performance{padding:0!important;background:#171717;border-top:3px solid var(--red)}
+.priority-performance .performance-sync{margin:0;border:0;background:#171717}
+.priority-performance .performance-sync-head strong{font-size:12px}
+.priority-performance .performance-window,.priority-performance .medium-metric-grid,.priority-performance .sync-meta,.priority-performance .sync-warnings{display:none}
+.priority-performance .sync-message{padding:0 12px 10px;margin:0!important}
 @media(max-width:800px){.future-planning{grid-template-columns:1fr}.future-date-row button{min-width:145px}}
