@@ -66,5 +66,7 @@ if(actionIndex>=0&&actionIndex<helperIndex){source=source.slice(0,actionIndex)+c
 else if(actionIndex<0){source=source.slice(0,helperIndex)+components+'\n'+source.slice(helperIndex)}
 
 source=source.replace("item.type==='campaign'&&!item.parentCampaignId&&item.type!=='strategy'","item.type==='campaign'&&!item.parentCampaignId");
+// Review previews must be visible on Email tickets as well as other channels.
+source=source.replace("{item.type!=='important-date'&&item.channel!=='Email'&&<SharedHtmlPreview item={item} onUpdate={onUpdate}/>}","{item.type!=='important-date'&&<SharedHtmlPreview item={item} onUpdate={onUpdate}/>}");
 fs.writeFileSync(path,source);
-console.log('Planner production buckets expand in place, workflow logic is aligned, and approved work prioritises performance.');
+console.log('Planner production buckets expand in place, workflow logic is aligned, approved work prioritises performance, and review previews are shared across channels.');
