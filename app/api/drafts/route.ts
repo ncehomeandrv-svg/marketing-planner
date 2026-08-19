@@ -8,9 +8,18 @@ function isRemovedTradeOemBlog(item: PlannerItem) {
   return item.id.includes('-trade-oem-blog-') || (/^Trade \/ OEM Blog/i.test(item.title) && item.channel === 'Website');
 }
 
+function isBlogItem(item: PlannerItem) {
+  const text = [item.title, item.description, item.performance?.notes].filter(Boolean).join(' ');
+  return item.contentFormat === 'Blog' || item.id.includes('-blog-') || /\bblog\b/i.test(item.title || '') || /https?:\/\/(?:www\.)?nce\.com\.au\/blog\//i.test(text);
+}
+
+function normaliseItem(item: PlannerItem): PlannerItem {
+  return isBlogItem(item) ? { ...item, channel: 'Website', contentFormat: 'Blog' } : item;
+}
+
 function workflowNotification(previous: PlannerItem | undefined, item: PlannerItem) {
   if (!previous) return null;
-  const isBlog = item.channel === 'Website' && (item.source === 'Monthly Content Plan' || /^Blog(?:\s|$)/i.test(item.title || '') || item.id.includes('-blog-'));
+  const isBlog = isBlogItem(item);
   if (isBlog) return null;
 
   if (item.status === 'Brief Ready' && previous.status !== 'Brief Ready') {
@@ -50,20 +59,9 @@ async function sendWorkflowNotification(request: Request, previous: PlannerItem 
 }
 
 function config() {
-  // Vercel's Upstash/KV integration uses KV_REST_API_* names. Direct
-  // Upstash integrations may instead expose UPSTASH_REDIS_REST_* names.
-  // Supporting both keeps the same deployment portable between setups.
-  const url =
-    process.env.KV_REST_API_URL ??
-    process.env.UPSTASH_REDIS_REST_URL;
-  const token =
-    process.env.KV_REST_API_TOKEN ??
-    process.env.UPSTASH_REDIS_REST_TOKEN;
-
-  return {
-    url: url?.trim().replace(/\/$/, ''),
-    token: token?.trim(),
-  };
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  return { url: url?.trim().replace(/\/$/, ''), token: token?.trim() };
 }
 
 async function command(command: unknown[]) {
@@ -80,18 +78,19 @@ export async function GET() {
     const result = await command(['GET', KEY]);
     const deletedRaw = await command(['GET', DELETED_KEY]);
     const storedItems: PlannerItem[] = result ? JSON.parse(String(result)) : [];
-    const items = storedItems.filter(item => !isRemovedTradeOemBlog(item));
-    if (items.length !== storedItems.length) await command(['SET', KEY, JSON.stringify(items)]);
+    const items = storedItems.filter(item => !isRemovedTradeOemBlog(item)).map(normaliseItem);
+    if (JSON.stringify(items) !== JSON.stringify(storedItems)) await command(['SET', KEY, JSON.stringify(items)]);
     return NextResponse.json({ configured: result !== null || Boolean(config().url), items, deletedIds: deletedRaw ? JSON.parse(String(deletedRaw)) : [] });
   } catch (error) { return NextResponse.json({ configured: false, items: [], error: error instanceof Error ? error.message : 'Unable to load drafts' }, { status: 500 }); }
 }
 
 export async function PUT(request: Request) {
   try {
-    const item = await request.json() as PlannerItem;
-    if (!item?.id) return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
+    const incoming = await request.json() as PlannerItem;
+    if (!incoming?.id) return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });
+    const item = normaliseItem(incoming);
     const currentRaw = await command(['GET', KEY]);
-    const current: PlannerItem[] = currentRaw ? JSON.parse(String(currentRaw)).filter((existing: PlannerItem) => !isRemovedTradeOemBlog(existing)) : [];
+    const current: PlannerItem[] = currentRaw ? JSON.parse(String(currentRaw)).filter((existing: PlannerItem) => !isRemovedTradeOemBlog(existing)).map(normaliseItem) : [];
     if (isRemovedTradeOemBlog(item)) return NextResponse.json({ configured: true, item, removed: true });
     const previous = current.find(existing => existing.id === item.id);
     const next = current.some(existing => existing.id === item.id) ? current.map(existing => existing.id === item.id ? item : existing) : [...current, item];
