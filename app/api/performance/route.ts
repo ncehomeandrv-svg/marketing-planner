@@ -12,6 +12,13 @@ function tokens(value:string){const stop=new Set(['the','and','for','with','from
 function scoreText(text:string,title:string,caption:string){const hay=norm(text),exactCaption=norm(caption),exactTitle=norm(title);if(exactCaption&&hay.includes(exactCaption))return 200;if(exactTitle&&(hay.includes(exactTitle)||exactTitle.includes(hay)))return 100;const wanted=tokens(title);return wanted.filter(t=>hay.includes(t)).length}
 function metricValue(payload:any,name:string){const rows=Array.isArray(payload?.data)?payload.data:[];const match=rows.find((row:any)=>row?.name===name);const value=match?.values?.[0]?.value??match?.value??0;return Number(value||0)||0}
 async function safeMetric(path:string,name:string,token?:string){try{return metricValue(await metaFetch(`${path}?metric=${encodeURIComponent(name)}`,{},token),name)}catch{return 0}}
+async function facebookReactionCount(postId:string,token:string){
+  try{
+    const payload=await metaFetch(`/${postId}/reactions?limit=0&summary=total_count`,{},token);
+    const value=payload?.summary?.total_count;
+    return value===undefined||value===null?null:Number(value)||0;
+  }catch{return null}
+}
 
 async function organicMeta(payload:any){
   const config=metaConfig();if(!config.pageId&&!config.instagramId)throw new Error('Meta organic connection is not configured.');
@@ -24,19 +31,20 @@ async function organicMeta(payload:any){
     try{
       const pageToken=await resolveFacebookPageToken();
       const row=await metaFetch(`/${fbId}?fields=id,shares,reactions.limit(0).summary(true),comments.limit(0).summary(true)`,{},pageToken);
-      const [impressions,reach,engaged]=await Promise.all([
+      const [impressions,reach,engaged,directReactionCount]=await Promise.all([
         safeMetric(`/${fbId}/insights`,'post_impressions',pageToken),
         safeMetric(`/${fbId}/insights`,'post_impressions_unique',pageToken),
         safeMetric(`/${fbId}/insights`,'post_engaged_users',pageToken),
+        facebookReactionCount(fbId,pageToken),
       ]);
-      const reactions=Number(row?.reactions?.summary?.total_count||0),comments=Number(row?.comments?.summary?.total_count||0),shares=Number(row?.shares?.count||0);
+      const reactions=directReactionCount??Number(row?.reactions?.summary?.total_count||0),comments=Number(row?.comments?.summary?.total_count||0),shares=Number(row?.shares?.count||0);
       if(impressions)performance.impressions=(performance.impressions||0)+impressions;
       if(reach)performance.reach=(performance.reach||0)+reach;
       performance.reactions=(performance.reactions||0)+reactions;
       performance.comments=(performance.comments||0)+comments;
       performance.shares=(performance.shares||0)+shares;
       performance.engagements=(performance.engagements||0)+Math.max(engaged,reactions+comments+shares);
-      sources.facebook={matched:1,postId:fbId};
+      sources.facebook={matched:1,postId:fbId,reactionSource:directReactionCount===null?'embedded-summary':'reactions-edge'};
       if(!impressions&&!reach&&!engaged)warnings.push('Facebook: post matched, but Meta did not expose Page-post insight metrics for this post type. Reactions, comments and shares were still pulled.');
     }catch(error:any){warnings.push(`Facebook post metrics: ${error?.message||'unavailable'}`)}
   }
