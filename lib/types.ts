@@ -45,7 +45,7 @@ export interface PlannerPerformance {
   unsubscribeRate?:number;
   bounces?:number;
   bounceRate?:number;
-  // Organic social / general content
+  // Organic social / general content combined totals
   reach?:number;
   impressions?:number;
   views?:number;
@@ -58,6 +58,22 @@ export interface PlannerPerformance {
   engagementRate?:number;
   linkClicks?:number;
   videoViews?:number;
+  // Meta organic platform-specific performance
+  facebookReach?:number;
+  facebookViews?:number;
+  facebookImpressions?:number;
+  facebookReactions?:number;
+  facebookComments?:number;
+  facebookShares?:number;
+  facebookEngagements?:number;
+  instagramReach?:number;
+  instagramViews?:number;
+  instagramLikes?:number;
+  instagramComments?:number;
+  instagramSaves?:number;
+  instagramShares?:number;
+  instagramEngagements?:number;
+  combinedOrganicEngagement?:number;
   // Legacy/manual fields retained for existing tickets
   clicks?:number;
   spend?:number;
