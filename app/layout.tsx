@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './production.css';
+import './production-board.css';
 
 export const metadata: Metadata = {
   title: 'NCE Marketing Planner',
