@@ -10,17 +10,25 @@ if(!source.includes(importLine)){
   source=source.replace(importAnchor,`${importAnchor}\n${importLine}`);
 }
 
-const priorityCondition="item.approvalStatus==='Approved'&&['Scheduled','Published'].includes(item.status)";
+// Once production is effectively finished, performance becomes the primary action.
+// Show stats at the top for anything explicitly approved or in an approved/scheduled/published workflow stage.
+const priorityCondition="item.approvalStatus==='Approved'||['Approved','Scheduled','Published'].includes(item.status)";
+const oldPriorityCondition="item.approvalStatus==='Approved'&&['Scheduled','Published'].includes(item.status)";
+source=source.split(oldPriorityCondition).join(priorityCondition);
+
 const segmentAnchor='<div className={`segment-strip ${segmentClass[item.segment]}`}>{item.segment} · {inferFormat(item)}</div>';
-const topSync=`${segmentAnchor}\n    {item.type!=='important-date'&&${priorityCondition}&&<section className="drawer-section priority-performance"><PerformanceSync item={item} onUpdate={onUpdate}/></section>}`;
-if(!source.includes('className="drawer-section priority-performance"')){
-  if(!source.includes(segmentAnchor))throw new Error('Priority performance anchor not found.');
-  source=source.replace(segmentAnchor,topSync);
+const topSync=`${segmentAnchor}\n    {item.type!=='important-date'&&(${priorityCondition})&&<section className="drawer-section priority-performance"><PerformanceSync item={item} onUpdate={onUpdate}/></section>}`;
+if(source.includes(segmentAnchor)&&!source.includes(`item.type!=='important-date'&&(${priorityCondition})&&<section className="drawer-section priority-performance"`)){
+  source=source.replace(/<div className=\{`segment-strip \$\{segmentClass\[item\.segment\]\}`\}>\{item\.segment\} · \{inferFormat\(item\)\}<\/div>\n\s*\{item\.type!==['"]important-date['"]&&[^\n]+<section className="drawer-section priority-performance"><PerformanceSync item=\{item\} onUpdate=\{onUpdate\}\/><\/section>\}/,topSync);
+  if(!source.includes(`item.type!=='important-date'&&(${priorityCondition})&&<section className="drawer-section priority-performance"`)){
+    source=source.replace(segmentAnchor,topSync);
+  }
 }
 
 const resultsAnchor='<div className="metric-grid">';
 const bottomSync=`{!(${priorityCondition})&&<PerformanceSync item={item} onUpdate={onUpdate}/>}<div className="metric-grid">`;
-if(!source.includes('!('+priorityCondition+')&&<PerformanceSync')){
+source=source.replace(/\{!\([^\n]+\)&&<PerformanceSync item=\{item\} onUpdate=\{onUpdate\}\/>\}<div className="metric-grid">/,bottomSync);
+if(!source.includes(`!(${priorityCondition})&&<PerformanceSync`)){
   source=source.replace('<PerformanceSync item={item} onUpdate={onUpdate}/><div className="metric-grid">',bottomSync);
   if(!source.includes(bottomSync)){
     if(!source.includes(resultsAnchor))throw new Error('Performance results anchor not found.');
@@ -59,4 +67,4 @@ else if(actionIndex<0){source=source.slice(0,helperIndex)+components+'\n'+source
 
 source=source.replace("item.type==='campaign'&&!item.parentCampaignId&&item.type!=='strategy'","item.type==='campaign'&&!item.parentCampaignId");
 fs.writeFileSync(path,source);
-console.log('Planner production buckets expand in place and workflow logic is aligned.');
+console.log('Planner production buckets expand in place, workflow logic is aligned, and approved work prioritises performance.');
