@@ -3,9 +3,9 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs && node scripts/inject-review-selection-stability.mjs && node scripts/inject-review-workflow-consistency.mjs && node scripts/inject-meta-panel-stability.mjs && node scripts/inject-drawer-dedupe.mjs",
+    "predev": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs && node scripts/inject-review-selection-stability.mjs && node scripts/inject-review-workflow-consistency.mjs && node scripts/inject-drawer-dedupe.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs && node scripts/inject-review-selection-stability.mjs && node scripts/inject-review-workflow-consistency.mjs && node scripts/inject-meta-panel-stability.mjs && node scripts/inject-drawer-dedupe.mjs",
+    "prebuild": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs && node scripts/inject-review-selection-stability.mjs && node scripts/inject-review-workflow-consistency.mjs && node scripts/inject-drawer-dedupe.mjs",
     "build": "next build",
     "start": "next start"
   },
