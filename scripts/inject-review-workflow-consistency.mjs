@@ -23,5 +23,18 @@ const newPatch="  const patch=(changes:Partial<PlannerItem>)=>{let normalizedCha
 if(source.includes(oldPatch)) source=source.replace(oldPatch,newPatch);
 else if(!source.includes(newPatch)) throw new Error('Detail drawer patch helper not found.');
 
+// Campaign-child buttons are navigation, not edits. Previously they called onUpdate,
+// which could save the child card simply by clicking it and, after selection hardening,
+// would not reliably open it. Give the drawer an explicit navigation callback.
+source=source.replace(
+  "<DetailDrawer item={selected} allItems={items} currentPerson={currentPerson} onClose={()=>setSelected(null)} onUpdate={updateItem} onDuplicate={duplicateItem} onDelete={deleteItem}/>",
+  "<DetailDrawer item={selected} allItems={items} currentPerson={currentPerson} onClose={()=>setSelected(null)} onUpdate={updateItem} onSelect={setSelected} onDuplicate={duplicateItem} onDelete={deleteItem}/>"
+);
+source=source.replace(
+  "function DetailDrawer({item,allItems,currentPerson,onClose,onUpdate,onDuplicate,onDelete}:{item:PlannerItem;allItems:PlannerItem[];currentPerson:string;onClose:()=>void;onUpdate:(item:PlannerItem)=>void;onDuplicate:(item:PlannerItem)=>void;onDelete:(item:PlannerItem)=>void}){",
+  "function DetailDrawer({item,allItems,currentPerson,onClose,onUpdate,onSelect,onDuplicate,onDelete}:{item:PlannerItem;allItems:PlannerItem[];currentPerson:string;onClose:()=>void;onUpdate:(item:PlannerItem)=>void;onSelect:(item:PlannerItem)=>void;onDuplicate:(item:PlannerItem)=>void;onDelete:(item:PlannerItem)=>void}){"
+);
+source=source.replace("onClick={()=>onUpdate(child)}","onClick={()=>onSelect(child)}");
+
 fs.writeFileSync(path,source);
-console.log('Review statuses stay aligned and per-card saves are serialized.');
+console.log('Review statuses stay aligned, card saves are serialized, and child-card navigation is side-effect free.');
