@@ -3,9 +3,9 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/inject-performance-sync.mjs",
+    "predev": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/inject-performance-sync.mjs",
+    "prebuild": "node scripts/inject-performance-sync.mjs && node scripts/inject-dotdigital-review-preload.mjs",
     "build": "next build",
     "start": "next start"
   },
