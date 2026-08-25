@@ -15,6 +15,18 @@ const oldPreviewInterface='interface CampaignPreview { campaignId: number; name:
 const newPreviewInterface='interface CampaignPreview { campaignId: number; name: string; subject: string; previewText: string; fromName: string; htmlContent: string; plainTextContent: string; links?: Array<{ href: string; label: string }> }';
 if(panel.includes(oldPreviewInterface)) panel=panel.replace(oldPreviewInterface,newPreviewInterface);
 
+const helperAnchor='function normaliseCampaign(value: Campaign) {';
+const helper=`function previewHtmlWithNewTabLinks(html: string) {\n  return html.replace(/<a\\b([^>]*)>/gi, (match, attrs: string) => {\n    if (/\\btarget\\s*=/.test(attrs)) {\n      return '<a' + attrs.replace(/\\btarget\\s*=\\s*(["\\']).*?\\1/i, 'target="_blank"') + '>';\n    }\n    return '<a' + attrs + ' target="_blank" rel="noopener noreferrer">';\n  });\n}\n\n`;
+if(!panel.includes('function previewHtmlWithNewTabLinks(')){
+  if(!panel.includes(helperAnchor)) throw new Error('Dotdigital preview helper anchor not found.');
+  panel=panel.replace(helperAnchor,helper+helperAnchor);
+}
+
+const oldIframe='{preview.htmlContent ? <iframe title={`Preview of ${preview.name}`} sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={preview.htmlContent}/> : <pre>{preview.plainTextContent}</pre>}';
+const newIframe='{preview.htmlContent ? <iframe title={`Preview of ${preview.name}`} sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={previewHtmlWithNewTabLinks(preview.htmlContent)}/> : <pre>{preview.plainTextContent}</pre>}';
+if(panel.includes(oldIframe)) panel=panel.replace(oldIframe,newIframe);
+else if(!panel.includes(newIframe)) throw new Error('Dotdigital preview iframe anchor not found.');
+
 const detailsBlock='{preview && <div className="campaign-message-details"><div><span>Subject line</span><strong>{preview.subject || \'No subject line set\'}</strong></div><div><span>Preview text</span><strong>{preview.previewText || \'No preview text detected\'}</strong></div></div>}';
 const linksBlock=`${detailsBlock}\n      {preview && <div className="dotdigital-review-links"><div className="dotdigital-review-links-head"><div><span className="integration-kicker">LINK CHECK</span><strong>Email links to review</strong></div><span>{preview.links?.length ?? 0} link{(preview.links?.length ?? 0) === 1 ? '' : 's'}</span></div>{preview.links?.length ? <div className="dotdigital-review-link-list">{preview.links.map((link,index)=><a key={\`\${link.href}-\${index}\`} href={link.href} target="_blank" rel="noreferrer"><span>{link.label || \`Link \${index+1}\`}</span><small>{link.href}</small></a>)}</div> : <p className="audience-help">No standard web links were found in the current Dotdigital campaign.</p>}</div>}`;
 if(panel.includes(detailsBlock) && !panel.includes('className="dotdigital-review-links"')) panel=panel.replace(detailsBlock,linksBlock);
@@ -35,4 +47,4 @@ const newHref="const reviewAnchor=item?.channel==='Email'&&item?.id?'#dotdigital
 if(notifications.includes(oldHref)) notifications=notifications.replace(oldHref,newHref);
 fs.writeFileSync(notificationsPath,notifications);
 
-console.log('Dotdigital selections persist immediately, review links open the email section, and campaign URLs are listed for checking.');
+console.log('Dotdigital selections persist immediately, review links open the email section, and links inside the email preview open in new tabs.');
