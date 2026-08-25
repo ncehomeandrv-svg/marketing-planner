@@ -11,7 +11,6 @@ function pickString(value: unknown, keys: string[]) {
   return '';
 }
 
-
 function decodeEntities(value: string) {
   return value
     .replace(/&nbsp;/gi, ' ')
@@ -54,6 +53,37 @@ function extractPreviewText(html: string, campaign: unknown) {
   return bodyText.slice(0, 180).trim();
 }
 
+type ReviewLink = { href: string; label: string };
+
+function extractReviewLinks(html: string): ReviewLink[] {
+  if (!html) return [];
+  const links: ReviewLink[] = [];
+  const seen = new Set<string>();
+  const anchorPattern = /<a\b[^>]*\bhref\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = anchorPattern.exec(html)) !== null) {
+    const href = decodeEntities(match[2] || '').trim();
+    if (!/^https?:\/\//i.test(href)) continue;
+    if (seen.has(href)) continue;
+    seen.add(href);
+
+    const rawLabel = stripMarkup(match[3] || '');
+    const label = rawLabel || (() => {
+      try {
+        const url = new URL(href);
+        return `${url.hostname}${url.pathname === '/' ? '' : url.pathname}`;
+      } catch {
+        return href;
+      }
+    })();
+
+    links.push({ href, label: label.slice(0, 160) });
+  }
+
+  return links;
+}
+
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
@@ -69,6 +99,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     const subject = pickString(campaign, ['subject', 'Subject']);
     const fromName = pickString(campaign, ['fromName', 'FromName']);
     const previewText = extractPreviewText(htmlContent, campaign);
+    const links = extractReviewLinks(htmlContent);
 
     if (!htmlContent && !plainTextContent) {
       return NextResponse.json({ error: 'Dotdigital did not return any previewable campaign content.' }, { status: 404 });
@@ -82,6 +113,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       previewText,
       htmlContent,
       plainTextContent,
+      links,
     });
   } catch (error) {
     return NextResponse.json(
