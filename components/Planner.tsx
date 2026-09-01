@@ -53,7 +53,7 @@ function inferFormat(item:PlannerItem):ContentFormat{
 function isDone(item:PlannerItem){return item.status==='Published'}
 
 export default function Planner({initialItems}:{initialItems:PlannerItem[]}){
-  const [month,setMonth]=useState(new Date('2026-08-01T00:00:00'));
+  const [month,setMonth]=useState(()=>startOfMonth(new Date()));
   const [today]=useState(()=>new Date());
   const [items,setItems]=useState(initialItems);
   const [selected,setSelected]=useState<PlannerItem|null>(null);
