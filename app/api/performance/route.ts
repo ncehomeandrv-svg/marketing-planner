@@ -74,6 +74,19 @@ export async function POST(request:NextRequest){
     const oidc=request.headers.get('x-vercel-oidc-token')||process.env.VERCEL_OIDC_TOKEN||'';
     if(!oidc)return Response.json({error:'Vercel OIDC is not available for this deployment.'},{status:503});
     const response=await fetch(ANALYTICS_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${oidc}`},body:JSON.stringify(payload),cache:'no-store'});
-    const text=await response.text();let body:any={};try{body=text?JSON.parse(text):{}}catch{body={error:text||`Analytics dashboard returned HTTP ${response.status}.`}}return Response.json(body,{status:response.status});
+    const text=await response.text();
+    let body:any={};
+    try{body=text?JSON.parse(text):{}}catch{body={error:text||`Analytics dashboard returned HTTP ${response.status}.`}}
+
+    if(response.ok&&format==='Blog'){
+      const matched=Number(body?.sources?.ga4Blog?.matched||0)>0;
+      if(!matched){
+        const warnings=Array.isArray(body?.warnings)?body.warnings.map((warning:unknown)=>clean(warning)).filter(Boolean):[];
+        const detail=warnings[0]||body?.note||'GA4 did not return a current page-path match for this blog.';
+        return Response.json({error:`Blog analytics refresh failed: ${detail}`,warnings,staleResultsRetained:true},{status:503});
+      }
+    }
+
+    return Response.json(body,{status:response.status});
   }catch(error){return Response.json({error:error instanceof Error?error.message:'Unable to pull performance.'},{status:500})}
 }
