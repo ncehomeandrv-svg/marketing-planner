@@ -38,12 +38,19 @@ export default function MetaPanel({item,onUpdate}:{item:PlannerItem;onUpdate:(it
     setUploading(true);
     setMessage(selected.length===1?'Saving image…':'Saving images…');
     try{
+      const oversized=selected.find(file=>file.size>8_000_000);
+      if(oversized)throw new Error(`${oversized.name} is over 8 MB. Compress it before uploading.`);
       const uploaded=await Promise.all(selected.map(async file=>{
         const form=new FormData();form.set('file',file);form.set('itemId',item.id);
         const r=await fetch('/api/meta/assets',{method:'POST',body:form});
-        const b=await r.json();
-        if(!r.ok)throw new Error(b.error||`Unable to upload ${file.name}`);
-        return b.asset as MetaMediaAsset;
+        const text=await r.text();
+        let b:{error?:string;asset?:MetaMediaAsset}={};
+        try{b=JSON.parse(text)}catch{
+          const detail=text.trim().slice(0,180);
+          throw new Error(detail||`Unable to upload ${file.name}`);
+        }
+        if(!r.ok||!b.asset)throw new Error(b.error||`Unable to upload ${file.name}`);
+        return b.asset;
       }));
       temporary.forEach(asset=>URL.revokeObjectURL(asset.url));
       commit([...baseAssets,...uploaded],`${uploaded.length} scheduling image${uploaded.length===1?'':'s'} uploaded.`);
