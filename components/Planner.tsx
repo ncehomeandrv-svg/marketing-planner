@@ -87,6 +87,14 @@ export default function Planner({initialItems}:{initialItems:PlannerItem[]}){
 
   useEffect(()=>{const id=new URLSearchParams(window.location.search).get('item');if(!id)return;const match=items.find(entry=>entry.id===id);if(match){setSelected(match);setMonth(parseISO(match.date));}},[items]);
 
+  useEffect(()=>{
+    if(!selected || new URLSearchParams(window.location.search).get('review')!=='1') return;
+    const id=window.setTimeout(()=>{
+      document.getElementById('review-assets')?.scrollIntoView({behavior:'smooth',block:'start'});
+    },150);
+    return ()=>window.clearTimeout(id);
+  },[selected?.id]);
+
   const days=useMemo(()=>eachDayOfInterval({start:startOfWeek(startOfMonth(month),{weekStartsOn:1}),end:endOfWeek(endOfMonth(month),{weekStartsOn:1})}),[month]);
   const monthKey=format(month,'yyyy-MM');
   const todayKey=format(today,'yyyy-MM-dd');
