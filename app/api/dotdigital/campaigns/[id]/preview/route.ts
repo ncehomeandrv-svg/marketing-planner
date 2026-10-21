@@ -53,6 +53,36 @@ function extractPreviewText(html: string, campaign: unknown) {
   return bodyText.slice(0, 180).trim();
 }
 
+
+function preparePreviewHtml(html: string) {
+  // Dotdigital HTML can contain root-relative, protocol-relative or legacy HTTP
+  // image URLs. srcDoc otherwise resolves relative URLs against the planner.
+  const absoluteImages = Array.from(html.matchAll(/<img\\b[^>]*\\bsrc\\s*=\\s*["'](https?:\\/\\/[^"']+)["']/gi))
+    .map(match => match[1].replace(/&amp;/gi, '&'));
+  const origin = absoluteImages.find(url => /^https:\\/\\//i.test(url));
+  const assetBase = origin ? new URL(origin).origin : '';
+  let fixed = html.replace(/(<(?:img|source|video|td|table)\\b[^>]*?\\b(?:src|srcset|poster|background)\\s*=\\s*["'])([^"']+)(["'])/gi,
+    (whole, before: string, value: string, after: string) => {
+      const resolve = (address: string) => {
+        const candidate = address.trim().replace(/&amp;/gi, '&');
+        if (/^\\/\\//.test(candidate)) return 'https:' + candidate;
+        if (/^http:\\/\\//i.test(candidate)) return 'https://' + candidate.slice(7);
+        if (/^https:\\/\\//i.test(candidate) || /^(data:|cid:|blob:)/i.test(candidate)) return candidate;
+        if (assetBase && candidate.startsWith('/')) return assetBase + candidate;
+        return candidate;
+      };
+      const updated = /\\bsrcset\\s*=/i.test(before)
+        ? value.split(',').map(part => part.replace(/^(\\s*)(\\S+)/, (_m, whitespace: string, url: string) => whitespace + resolve(url))).join(',')
+        : resolve(value);
+      return before + updated.replace(/&/g, '&amp;') + after;
+    });
+  // Let relative asset URLs resolve from the email image host rather than our app.
+  if (assetBase && !/<base\\b/i.test(fixed)) {
+    fixed = '<base href="' + assetBase + '/">' + fixed;
+  }
+  return fixed;
+}
+
 type ReviewLink = { href: string; label: string };
 
 function extractReviewLinks(html: string): ReviewLink[] {
@@ -93,7 +123,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     }
 
     const campaign = await dotdigitalFetch(`/campaigns/${campaignId}`);
-    const htmlContent = pickString(campaign, ['htmlContent', 'HtmlContent']);
+    const htmlContent = preparePreviewHtml(pickString(campaign, ['htmlContent', 'HtmlContent']));
     const plainTextContent = pickString(campaign, ['plainTextContent', 'PlainTextContent']);
     const name = pickString(campaign, ['name', 'Name']) || `Campaign ${campaignId}`;
     const subject = pickString(campaign, ['subject', 'Subject']);
