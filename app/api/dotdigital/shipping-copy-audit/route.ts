@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { campaignId, campaignName, campaignStatus, htmlOf, inSmallGroups, loadAllUnsentCampaigns, loadCampaign, type DotdigitalCampaign } from '@/lib/dotdigital-shipping';
+import { campaignId, campaignName, campaignStatus, htmlOf, inSmallGroups, loadCampaign, type DotdigitalCampaign } from '@/lib/dotdigital-shipping';
+import { dotdigitalFetch } from '@/lib/dotdigital';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,7 +50,7 @@ function embeddedPreheader(html: string) {
 }
 
 // Restrict body matches to text referring to shipping; do not mistake a product price for a threshold.
-const oldAmount = /(?:A\s*\$|\$)\s*200(?:\.00)?\b/gim;
+const oldAmount = /(?:(?:A\s*)?\$\s*|\b)200(?:\.00)?(?=\s*(?:\+|\*|\b))/gim;
 const shippingContext = /(?:free|complimentary|no[- ]cost|eligible).{0,35}(?:ship(?:ping)?|freight|deliver(?:y|ies))|(?:ship(?:ping)?|freight|deliver(?:y|ies)).{0,35}(?:free|complimentary|no[- ]cost|eligible)/i;
 
 function collect(source: string, field: Field): Finding[] {
@@ -60,8 +61,7 @@ function collect(source: string, field: Field): Finding[] {
   for (const match of value.matchAll(oldAmount)) {
     const index = match.index ?? 0;
     const context = value.slice(Math.max(0, index - 100), Math.min(value.length, index + match[0].length + 100));
-    const isMetadata = field === 'Subject' || field === 'Preview text';
-    if (!isMetadata && !shippingContext.test(context)) continue;
+    if (!shippingContext.test(context)) continue;
     const start = Math.max(0, index - 70);
     const end = Math.min(value.length, index + match[0].length + 80);
     const before = (start ? '…' : '') + value.slice(start, end) + (end < value.length ? '…' : '');
@@ -72,9 +72,30 @@ function collect(source: string, field: Field): Finding[] {
   return result;
 }
 
+async function loadEveryUnsentCampaign() {
+  const results: DotdigitalCampaign[] = [];
+  const unique = new Set<number>();
+  const pageSize = 100;
+  for (let skip = 0; skip < 3000; skip += pageSize) {
+    const response: unknown = await dotdigitalFetch('/campaigns/filtered?select=' + pageSize + '&skip=' + skip + '&~statuses=Unsent');
+    const page = Array.isArray(response) ? response : (response as { items?: unknown } | null)?.items;
+    if (!Array.isArray(page)) throw new Error('Unexpected campaign listing response at offset ' + skip);
+    for (const raw of page) {
+      const campaign = raw as DotdigitalCampaign;
+      const id = campaignId(campaign);
+      if (Number.isSafeInteger(id) && id > 0 && campaignStatus(campaign) === 'Unsent' && !unique.has(id)) {
+        unique.add(id);
+        results.push(campaign);
+      }
+    }
+    if (page.length < pageSize) return results;
+  }
+  throw new Error('The account has more than 3,000 Unsent campaigns. Audit pagination limit reached.');
+}
+
 export async function GET() {
   try {
-    const unsent = await loadAllUnsentCampaigns();
+    const unsent = await loadEveryUnsentCampaign();
     const errors: { id: number; name: string; issue: string }[] = [];
     const results = await inSmallGroups(unsent, 5, async candidate => {
       const id = campaignId(candidate);
