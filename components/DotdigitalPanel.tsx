@@ -210,6 +210,8 @@ export default function DotdigitalPanel({ item, onUpdate }: { item: PlannerItem;
       {connected ? <CheckCircle2 size={17}/> : <Mail size={17}/>}<strong>{connected ? 'Dotdigital connected' : configured === false ? 'Dotdigital not configured' : 'Dotdigital unavailable'}</strong>
     </div>
 
+    {connected && <a href="/dotdigital-shipping" style={{ display: 'inline-block', margin: '10px 0 16px', color: '#b51e26', fontFamily: 'Lexend, Arial, sans-serif', fontSize: 13, fontWeight: 700, textDecoration: 'underline' }}>Bulk shipping threshold updates ($200 to $250)</a>}
+
     {connected && <>
       <div className="integration-field"><span>Dotdigital campaign</span><div className="campaign-select-row"><select value={campaignId} onChange={event => setCampaignId(event.target.value)}><option value="">Select an unsent campaign</option>{campaigns.map(campaign => <option key={campaign.id} value={campaign.id}>{campaign.name}{campaign.subject ? ` — ${campaign.subject}` : ''}</option>)}</select><button className="btn secondary preview-btn" type="button" onClick={() => void loadPreview()} disabled={!campaignId || previewLoading}>{previewLoading ? <LoaderCircle className="spin" size={16}/> : <Eye size={16}/>}Preview</button></div></div>
       {preview && <div className="campaign-message-details"><div><span>Subject line</span><strong>{preview.subject || 'No subject line set'}</strong></div><div><span>Preview text</span><strong>{preview.previewText || 'No preview text detected'}</strong></div></div>}
