@@ -43,10 +43,10 @@ export async function GET() {
       try {
         const campaign = await loadCampaign(id);
         if (!safeForUpdate(campaign)) {
-          return { id, name: campaignName(campaign), reason: 'Not an Unsent standard non-split-test campaign' };
+          return { id, name: campaignName(campaign), reason: 'Not an Unsent standard non-split-test campaign', excluded: true };
         }
         const html = htmlOf(campaign);
-        if (!html) return { id, name: campaignName(campaign), reason: 'No HTML returned' };
+        if (!html) return { id, name: campaignName(campaign), reason: 'No HTML returned', excluded: true };
         const replacement = changeShippingHeading(html);
         if (!replacement.occurrences) {
           return {
@@ -61,7 +61,7 @@ export async function GET() {
           checksum: checksum(html),
         };
       } catch (error) {
-        return { id, name: campaignName(candidate), reason: messageOf(error) };
+        return { id, name: campaignName(candidate), reason: messageOf(error), readError: true };
       }
     });
 
@@ -76,7 +76,7 @@ export async function GET() {
       newText: NEW_SHIPPING_TEXT,
       totalUnsent: campaigns.length,
       matches, already250, noMatch, skipped,
-      canApply: skipped.length === 0,
+      canApply: !scans.some(scan => 'readError' in scan && scan.readError),
       previewOnly: true,
     });
   } catch (error) {
