@@ -95,7 +95,7 @@ async function loadEveryUnsentCampaign() {
 
 export async function GET() {
   try {
-    const unsent = (await loadEveryUnsentCampaign()).filter(c => { const label = (campaignName(c) + ' ' + String(c.subject ?? c.Subject ?? '')).toLowerCase(); return /black[\s-]*(?:november|friday)|\bbfcm\b/i.test(label) && !/\b2025\b|\b2024\b/.test(label); });
+    const unsent = (await loadEveryUnsentCampaign()).filter(c => { const label = (campaignName(c) + ' ' + String(c.subject ?? c.Subject ?? '')).toLowerCase(); return /black[\s_-]*(?:november|friday)|(?:^|[^a-z])bfcm(?:$|[^a-z])/i.test(label) && !/2025|2024/.test(label); });
     const errors: { id: number; name: string; issue: string }[] = [];
     const results = await inSmallGroups(unsent, 5, async candidate => {
       const id = campaignId(candidate);
