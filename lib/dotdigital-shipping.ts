@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import { dotdigitalFetch } from '@/lib/dotdigital';
 
-export const OLD_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $200+*';
-export const NEW_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $250+*';
+export const OLD_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $250+*';
+export const NEW_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $200+*';
 
-// Only the exact shipping headline, not every occurrence of "$200" in the email.
-// Dotdigital can add whitespace around words when saving editor content.
-const OLD_HEADING = /FREE\s+SHIPPING\s+ON\s+ELIGIBLE\s+ORDERS\s+\$200\+\*/g;
+// Match free-shipping threshold amounts only; do not replace unrelated product prices.
+const SHIPPING_FIRST = /((?:free(?:\s|&nbsp;|&#160;)+(?:shipping|freight|delivery)|shipping(?:\s|&nbsp;|&#160;)+(?:is(?:\s|&nbsp;|&#160;)+)?free)[^<>\r\n.!?]{0,100}?(?:\$|&#36;|&#x24;|&dollar;|\bover\b|\borders?\b)[\s\u00a0;]*)(250)(?=(?:\.00)?(?:[+*\s]|$))/gi;
+const SPEND_FIRST = /((?:\$|&#36;|&#x24;|&dollar;)\s*)(250)(?=(?:\+|\*|\s|&nbsp;)[^<>\r\n.!?]{0,75}?\bfree(?:\s|&nbsp;)+(?:shipping|freight|delivery)\b)/gi;
 
 export interface DotdigitalCampaign {
   id?: number;
@@ -59,9 +59,23 @@ export function checksum(html: string) {
   return createHash('sha256').update(html, 'utf8').digest('hex');
 }
 
-export function changeShippingHeading(html: string) {
-  const occurrences = [...html.matchAll(OLD_HEADING)].length;
-  return { occurrences, changedHtml: html.replace(OLD_HEADING, NEW_SHIPPING_TEXT) };
+export function changeShippingHeading(source: string, isHtml = false) {
+  let occurrences = 0;
+  // Leave HTML tags/attributes, link destinations and image URLs unchanged.
+  const segments = isHtml ? source.split(/(<!--[\s\S]*?-->|<[^>]*>)/g) : [source];
+  const changedHtml = segments.map(segment => {
+    if (isHtml && segment.startsWith('<')) return segment;
+    let updated = segment;
+    for (const pattern of [SHIPPING_FIRST, SPEND_FIRST]) {
+      pattern.lastIndex = 0;
+      updated = updated.replace(pattern, (_match, prefix: string, amount: string) => {
+        occurrences++;
+        return prefix + amount.replace('250', '200');
+      });
+    }
+    return updated;
+  }).join('');
+  return { occurrences, changedHtml };
 }
 
 export async function loadCampaign(id: number): Promise<DotdigitalCampaign> {
