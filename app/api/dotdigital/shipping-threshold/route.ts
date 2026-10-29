@@ -28,7 +28,7 @@ interface Target {
 
 function isBlackNovemberCampaign(c: DotdigitalCampaign) {
   const label = (campaignName(c) + ' ' + String(c.subject ?? c.Subject ?? '')).toLowerCase();
-  return /black[\s-]*(?:november|friday)|\bbfcm\b/i.test(label) && !/\b2025\b|\b2024\b/.test(label);
+  return /black[\s_-]*(?:november|friday)|(?:^|[^a-z])bfcm(?:$|[^a-z])/i.test(label) && !/2025|2024/.test(label);
 }
 
 const json = (body: unknown, status = 200) =>
