@@ -23,7 +23,7 @@ export default function DotdigitalShippingCopyAuditPage() {
     try {
       const response = await fetch('/api/dotdigital/shipping-copy-audit', { cache: 'no-store' });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Unable to read Dotdigital Unsent campaigns');
+      if (!response.ok) throw new Error(result.error || 'Unable to read Dotdigital Unsent Black November campaigns');
       setAudit(result as Audit);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Audit failed');
@@ -40,12 +40,13 @@ export default function DotdigitalShippingCopyAuditPage() {
       <a href="/" style={{ color: '#333', fontSize: 14, display: 'inline-block', marginBottom: 20 }}>← Marketing Planner</a>
       <header style={{ background: '#111', color: '#fff', borderTop: '6px solid #d71920', padding: 'clamp(22px, 4vw, 42px)' }}>
         <div style={{ color: '#f77', fontSize: 12, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>Dotdigital · Read-only audit</div>
-        <h1 style={{ margin: '12px 0', fontSize: 'clamp(25px, 4vw, 38px)', lineHeight: 1.15, fontFamily: 'Lexend, Arial, sans-serif' }}>Unsent shipping copy audit</h1>
-        <p style={{ margin: 0, maxWidth: 780, lineHeight: 1.6, color: '#ddd', fontSize: 14 }}>Find old $200 free-shipping references in editable email text, plain-text copy, subject lines and preview text. Image banners and artwork are not scanned. This audit never modifies, sends or schedules campaigns.</p>
+        <h1 style={{ margin: '12px 0', fontSize: 'clamp(25px, 4vw, 38px)', lineHeight: 1.15, fontFamily: 'Lexend, Arial, sans-serif' }}>Black November shipping copy audit</h1>
+        <p style={{ margin: 0, maxWidth: 780, lineHeight: 1.6, color: '#ddd', fontSize: 14 }}>Find old $250 free-shipping references in editable email text, plain-text copy, subject lines and preview text. Image banners and artwork are not scanned. This audit never modifies, sends or schedules campaigns. To apply verified corrections, use the bulk shipping updater.</p>
       </header>
 
       <section style={{ background: '#fff', padding: 24, marginTop: 16, border: '1px solid #e5e5e5' }}>
-        <button onClick={() => void runAudit()} type="button" disabled={working} style={{ background: working ? '#888' : '#d71920', color: '#fff', border: 0, borderRadius: 0, padding: '14px 24px', fontFamily: 'Lexend, Arial, sans-serif', fontWeight: 700, cursor: working ? 'wait' : 'pointer' }}>{working ? 'Scanning all Unsent campaigns…' : audit ? 'Re-run Dotdigital audit' : 'Scan all Unsent campaigns'}</button>
+        <a href="/dotdigital-shipping" style={{ display:'inline-block', marginBottom:16, color:'#b71920', fontWeight:700 }}>Open Black November $250 to $200 bulk updater</a>
+        <button onClick={() => void runAudit()} type="button" disabled={working} style={{ background: working ? '#888' : '#d71920', color: '#fff', border: 0, borderRadius: 0, padding: '14px 24px', fontFamily: 'Lexend, Arial, sans-serif', fontWeight: 700, cursor: working ? 'wait' : 'pointer' }}>{working ? 'Scanning Black November Unsent campaigns…' : audit ? 'Re-run Dotdigital audit' : 'Scan all Unsent campaigns'}</button>
         {error && <p role="alert" style={{ color: '#a11a23' }}>{error}</p>}
       </section>
 
@@ -60,7 +61,7 @@ export default function DotdigitalShippingCopyAuditPage() {
         </section>
 
         <section style={{ background: '#fff', padding: 24, marginTop: 16, border: '1px solid #e5e5e5' }}>
-          <h2 style={{ margin: '0 0 13px', fontFamily: 'Lexend, Arial, sans-serif', fontSize: 20 }}>What needs changing to $250</h2>
+          <h2 style={{ margin: '0 0 13px', fontFamily: 'Lexend, Arial, sans-serif', fontSize: 20 }}>What needs changing to $200</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
             {fields.map(field => <button key={field} type="button" onClick={() => setFilter(field)} style={{ borderRadius: 0, border: '1px solid #aaa', background: filter === field ? '#191919' : '#fff', color: filter === field ? '#fff' : '#222', padding: '8px 12px', cursor: 'pointer', fontSize: 12 }}>{field}</button>)}
           </div>
