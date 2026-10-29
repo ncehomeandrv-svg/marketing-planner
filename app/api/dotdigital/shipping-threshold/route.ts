@@ -12,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 interface Match {
+  requiresPreviewReview?: boolean;
+  affectedFields?: { html: number; subject: number; plain: number; preview: number };
   id: number;
   name: string;
   subject: string;
@@ -24,6 +26,11 @@ interface Target {
   checksum: string;
 }
 
+function isBlackNovemberCampaign(c: DotdigitalCampaign) {
+  const label = (campaignName(c) + ' ' + String(c.subject ?? c.Subject ?? '')).toLowerCase();
+  return /black[\s-]*(?:november|friday)|\bbfcm\b/i.test(label) && !/\b2025\b|\b2024\b/.test(label);
+}
+
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
@@ -33,10 +40,10 @@ function messageOf(error: unknown) {
 
 export async function GET() {
   try {
-    const campaigns = await loadAllUnsentCampaigns();
+    const campaigns = (await loadAllUnsentCampaigns()).filter(isBlackNovemberCampaign);
     const matches: Match[] = [];
     const skipped: Array<{ id: number; name: string; reason: string }> = [];
-    let already250 = 0;
+    let already200 = 0;
     let noMatch = 0;
     const scans = await inSmallGroups(campaigns, 5, async candidate => {
       const id = campaignId(candidate);
@@ -47,18 +54,27 @@ export async function GET() {
         }
         const html = htmlOf(campaign);
         if (!html) return { id, name: campaignName(campaign), reason: 'No HTML returned', excluded: true };
-        const replacement = changeShippingHeading(html);
-        if (!replacement.occurrences) {
+        const subject = String(campaign.subject ?? campaign.Subject ?? '');
+        const plain = String(campaign.plainTextContent ?? campaign.PlainTextContent ?? '');
+        const preview = String((campaign as Record<string, unknown>).previewText ?? (campaign as Record<string, unknown>).PreviewText ?? '');
+        const replacement = changeShippingHeading(html, true);
+        const subjectPatch = changeShippingHeading(subject);
+        const plainPatch = changeShippingHeading(plain);
+        const previewPatch = changeShippingHeading(preview);
+        const occurrences = replacement.occurrences + subjectPatch.occurrences + plainPatch.occurrences + previewPatch.occurrences;
+        if (!occurrences) {
           return {
             id, name: campaignName(campaign),
-            already250: html.includes(NEW_SHIPPING_TEXT),
+            already200: html.includes(NEW_SHIPPING_TEXT),
           };
         }
         return {
           id, name: campaignName(campaign),
-          subject: String(campaign.subject ?? campaign.Subject ?? ''),
-          occurrences: replacement.occurrences,
-          checksum: checksum(html),
+          subject,
+          occurrences,
+          checksum: checksum(JSON.stringify([html, subject, plain, preview])),
+          requiresPreviewReview: previewPatch.occurrences > 0,
+          affectedFields: { html: replacement.occurrences, subject: subjectPatch.occurrences, plain: plainPatch.occurrences, preview: previewPatch.occurrences },
         };
       } catch (error) {
         return { id, name: campaignName(candidate), reason: messageOf(error), readError: true };
@@ -68,14 +84,14 @@ export async function GET() {
     for (const scan of scans) {
       if ('reason' in scan && scan.reason) skipped.push({ id: scan.id, name: scan.name, reason: scan.reason });
       else if ('checksum' in scan && typeof scan.checksum === 'string') matches.push(scan as Match);
-      else if ('already250' in scan && scan.already250) already250++;
+      else if ('already200' in scan && scan.already200) already200++;
       else noMatch++;
     }
     return json({
       oldText: OLD_SHIPPING_TEXT,
       newText: NEW_SHIPPING_TEXT,
       totalUnsent: campaigns.length,
-      matches, already250, noMatch, skipped,
+      matches, already200, noMatch, skipped,
       canApply: !scans.some(scan => 'readError' in scan && scan.readError),
       previewOnly: true,
     });
@@ -95,7 +111,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return json({ error: 'Invalid JSON body.' }, 400);
   }
-  if (body.confirmation !== 'UPDATE_UNSENT_SHIPPING_250') {
+  if (body.confirmation !== 'UPDATE_UNSENT_SHIPPING_200') {
     return json({ error: 'Explicit shipping update confirmation is required.' }, 400);
   }
   if (!Array.isArray(body.targets) || body.targets.length < 1 || body.targets.length > 10) {
@@ -116,18 +132,29 @@ export async function POST(request: NextRequest) {
     try {
       const original: DotdigitalCampaign = await loadCampaign(target.id);
       name = campaignName(original);
-      if (campaignId(original) !== target.id || !safeForUpdate(original)) {
+      if (campaignId(original) !== target.id || !safeForUpdate(original) || !isBlackNovemberCampaign(original)) {
         results.push({ id: target.id, name, status: 'skipped', message: 'Campaign no longer eligible (status, type or split-test).' });
         continue;
       }
       const html = htmlOf(original);
-      if (!html || checksum(html) !== target.checksum) {
+      const oldSubject = String(original.subject ?? original.Subject ?? '');
+      const oldPlain = String(original.plainTextContent ?? original.PlainTextContent ?? '');
+      const oldPreview = String((original as Record<string, unknown>).previewText ?? (original as Record<string, unknown>).PreviewText ?? '');
+      if (!html || checksum(JSON.stringify([html, oldSubject, oldPlain, oldPreview])) !== target.checksum) {
         results.push({ id: target.id, name, status: 'skipped', message: 'Campaign changed since preview. Re-scan before updating.' });
         continue;
       }
-      const change = changeShippingHeading(html);
-      if (change.occurrences === 0) {
-        results.push({ id: target.id, name, status: 'skipped', message: 'Original $200+* shipping headline no longer found.' });
+      const change = changeShippingHeading(html, true);
+      const subjectChange = changeShippingHeading(oldSubject);
+      const plainChange = changeShippingHeading(oldPlain);
+      const previewChange = changeShippingHeading(oldPreview);
+      if (previewChange.occurrences > 0) {
+        results.push({ id: target.id, name, status: 'skipped', message: 'Separate preview text needs a manual update; no partial change made.' });
+        continue;
+      }
+      const totalChanges = change.occurrences + subjectChange.occurrences + plainChange.occurrences;
+      if (totalChanges === 0) {
+        results.push({ id: target.id, name, status: 'skipped', message: 'Original $250 free-shipping text no longer found.' });
         continue;
       }
       const subject = original.subject ?? original.Subject;
@@ -139,11 +166,11 @@ export async function POST(request: NextRequest) {
       }
       const payload = {
         name,
-        subject,
+        subject: subjectChange.changedHtml,
         fromName,
         fromAddress: original.fromAddress ?? original.FromAddress,
         htmlContent: change.changedHtml,
-        plainTextContent,
+        plainTextContent: plainChange.changedHtml,
         replyAction: original.replyAction ?? original.ReplyAction ?? 'Unset',
         replyToAddress: original.replyToAddress ?? original.ReplyToAddress ?? '',
       };
@@ -154,14 +181,14 @@ export async function POST(request: NextRequest) {
       const saved = await loadCampaign(target.id);
       const verified = safeForUpdate(saved) &&
         htmlOf(saved) === change.changedHtml &&
-        (saved.subject ?? saved.Subject) === subject &&
+        (saved.subject ?? saved.Subject) === subjectChange.changedHtml &&
         (saved.fromName ?? saved.FromName) === fromName &&
-        (saved.plainTextContent ?? saved.PlainTextContent) === plainTextContent;
+        (saved.plainTextContent ?? saved.PlainTextContent) === plainChange.changedHtml;
       results.push({
         id: target.id,
         name,
         status: verified ? 'updated' : 'verification-needed',
-        occurrences: change.occurrences,
+        occurrences: totalChanges,
         ...(!verified ? { message: 'Dotdigital accepted the update, but the full saved content did not exactly match. Review in Dotdigital.' } : {}),
       });
     } catch (error) {
