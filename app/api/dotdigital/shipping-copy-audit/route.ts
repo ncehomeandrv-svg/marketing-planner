@@ -50,7 +50,7 @@ function embeddedPreheader(html: string) {
 }
 
 // Restrict body matches to text referring to shipping; do not mistake a product price for a threshold.
-const oldAmount = /(?:(?:A\s*)?\$\s*|\b)200(?:\.00)?(?=\s*(?:\+|\*|\b))/gim;
+const oldAmount = /(?:(?:A\s*)?\$\s*|\b)250(?:\.00)?(?=\s*(?:\+|\*|\b))/gim;
 const shippingContext = /(?:free|complimentary|no[- ]cost|eligible).{0,35}(?:ship(?:ping)?|freight|deliver(?:y|ies))|(?:ship(?:ping)?|freight|deliver(?:y|ies)).{0,35}(?:free|complimentary|no[- ]cost|eligible)/i;
 
 function collect(source: string, field: Field): Finding[] {
@@ -65,7 +65,7 @@ function collect(source: string, field: Field): Finding[] {
     const start = Math.max(0, index - 70);
     const end = Math.min(value.length, index + match[0].length + 80);
     const before = (start ? '…' : '') + value.slice(start, end) + (end < value.length ? '…' : '');
-    const replacement = match[0].replace(/200(?:\.00)?/i, number => number.includes('.') ? '250.00' : '250');
+    const replacement = match[0].replace(/250(?:\.00)?/i, number => number.includes('.') ? '200.00' : '200');
     const after = (start ? '…' : '') + value.slice(start, index) + replacement + value.slice(index + match[0].length, end) + (end < value.length ? '…' : '');
     result.push({ field, currentText: before, suggestedText: after });
   }
@@ -95,7 +95,7 @@ async function loadEveryUnsentCampaign() {
 
 export async function GET() {
   try {
-    const unsent = await loadEveryUnsentCampaign();
+    const unsent = (await loadEveryUnsentCampaign()).filter(c => { const label = (campaignName(c) + ' ' + String(c.subject ?? c.Subject ?? '')).toLowerCase(); return /black[\s-]*(?:november|friday)|\bbfcm\b/i.test(label) && !/\b2025\b|\b2024\b/.test(label); });
     const errors: { id: number; name: string; issue: string }[] = [];
     const results = await inSmallGroups(unsent, 5, async candidate => {
       const id = campaignId(candidate);
