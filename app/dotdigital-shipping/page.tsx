@@ -9,6 +9,8 @@ type Match = {
   subject: string;
   occurrences: number;
   checksum: string;
+  affectedFields?: { html: number; subject: number; plain: number; preview: number };
+  requiresPreviewReview?: boolean;
 };
 type Skipped = { id: number; name: string; reason: string };
 type Audit = {
@@ -167,7 +169,7 @@ export default function DotdigitalShippingPage() {
           <div style={{ borderTop: '1px solid #e6e6e6' }}>
             {audit.matches.map(m => <div key={m.id} style={{ padding: '13px 0', borderBottom: '1px solid #e6e6e6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div><strong style={{ fontSize: 14 }}>{m.name}</strong><div style={{ fontSize: 12, color: '#666', marginTop: 3 }}>Campaign #{m.id}{m.subject ? ' · ' + m.subject : ''}</div></div>
-              <span style={{ fontSize: 12, color: '#8b1a1a', fontWeight: 700 }}>{m.occurrences} match{m.occurrences !== 1 ? 'es' : ''}</span>
+              <span style={{ fontSize: 12, color: '#8b1a1a', fontWeight: 700 }}>{m.occurrences} match{m.occurrences !== 1 ? 'es' : ''}{m.requiresPreviewReview ? ' · preview text needs manual review' : ''}</span>
             </div>)}
           </div>
           <button type="button" onClick={() => void apply()} disabled={busy !== null || !audit.canApply || results.length > 0}
