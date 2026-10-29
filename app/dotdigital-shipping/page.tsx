@@ -16,7 +16,7 @@ type Audit = {
   newText: string;
   totalUnsent: number;
   matches: Match[];
-  already250: number;
+  already200: number;
   noMatch: number;
   skipped: Skipped[];
   canApply: boolean;
@@ -41,7 +41,7 @@ export default function DotdigitalShippingPage() {
     setAudit(null);
     setResults([]);
     setError('');
-    setProgress('Checking Unsent campaigns in Dotdigital...');
+    setProgress('Checking Unsent Black November campaigns in Dotdigital...');
     try {
       const response = await fetch('/api/dotdigital/shipping-threshold', { cache: 'no-store' });
       const data = await response.json();
@@ -59,7 +59,7 @@ export default function DotdigitalShippingPage() {
   async function apply() {
     if (!audit?.matches.length || !audit.canApply) return;
     const confirmed = window.confirm(
-      'Update the free-shipping headline from $200+* to $250+* in ' +
+      'Update the free-shipping headline from $250+* to $200+* in ' +
       audit.matches.length + ' Unsent Dotdigital campaign(s)? This does not send or schedule anything.',
     );
     if (!confirmed) return;
@@ -76,7 +76,7 @@ export default function DotdigitalShippingPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            confirmation: 'UPDATE_UNSENT_SHIPPING_250',
+            confirmation: 'UPDATE_UNSENT_SHIPPING_200',
             targets: batch,
           }),
         });
@@ -87,7 +87,7 @@ export default function DotdigitalShippingPage() {
         all.push(...updated);
         setResults([...all]);
       }
-      setProgress('Completed. Scan again to confirm no matching $200+* headlines remain.');
+      setProgress('Completed. Scan again to confirm no matching $250+* headlines remain.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not complete every campaign update.');
       setProgress('Stopped after ' + all.length + ' checked campaigns. Re-scan before retrying.');
@@ -112,8 +112,8 @@ export default function DotdigitalShippingPage() {
         <div style={{ color: '#ff7373', textTransform: 'uppercase', fontSize: 12, letterSpacing: 2, fontWeight: 800 }}>Dotdigital · Email maintenance</div>
         <h1 style={{ fontFamily: 'Lexend, Arial, sans-serif', fontSize: 'clamp(27px, 4vw, 42px)', lineHeight: 1.14, margin: '13px 0' }}>Free shipping headline update</h1>
         <p style={{ fontSize: 15, lineHeight: 1.7, color: '#dddddd', maxWidth: 720, margin: 0 }}>
-          Find the exact $200+* shipping heading in Unsent campaigns, preview the affected drafts and safely update them to $250+*.
-          All other HTML, styling, subject lines and campaign settings are preserved.
+          Find the $250 free-shipping text in Unsent Black November campaigns, preview the affected drafts and safely update them to $200+*.
+          Other product prices, email styling, links and campaign settings are preserved. Subject and plain-text references are also checked.
         </p>
       </div>
 
@@ -122,11 +122,11 @@ export default function DotdigitalShippingPage() {
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))' }}>
           <div style={{ background: '#f7f7f7', borderLeft: '3px solid #999', padding: 18 }}>
             <span style={{ display: 'block', color: '#5e5e5e', fontSize: 12, fontWeight: 700, marginBottom: 10 }}>BEFORE</span>
-            <strong style={{ fontFamily: 'Lexend, Arial, sans-serif', fontSize: 14 }}>FREE SHIPPING ON ELIGIBLE ORDERS $200+*</strong>
+            <strong style={{ fontFamily: 'Lexend, Arial, sans-serif', fontSize: 14 }}>FREE SHIPPING ON ELIGIBLE ORDERS $250+*</strong>
           </div>
           <div style={{ background: '#fff8f8', borderLeft: '3px solid #d71920', padding: 18 }}>
             <span style={{ display: 'block', color: '#9d1b22', fontSize: 12, fontWeight: 700, marginBottom: 10 }}>AFTER</span>
-            <strong style={{ fontFamily: 'Lexend, Arial, sans-serif', fontSize: 14 }}>FREE SHIPPING ON ELIGIBLE ORDERS $250+*</strong>
+            <strong style={{ fontFamily: 'Lexend, Arial, sans-serif', fontSize: 14 }}>FREE SHIPPING ON ELIGIBLE ORDERS $200+*</strong>
           </div>
         </div>
         <p style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 0 22px', fontSize: 13, color: '#484848' }}>
@@ -135,7 +135,7 @@ export default function DotdigitalShippingPage() {
         <button type="button" onClick={() => void scan()} disabled={busy !== null}
           style={{ borderRadius: 0, background: '#191919', color: '#fff', padding: '13px 20px', border: 0, cursor: busy ? 'wait' : 'pointer', fontWeight: 700, fontFamily: 'Lexend, Arial, sans-serif', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
           {busy === 'scan' ? <LoaderCircle size={17}/> : <RefreshCw size={17}/>}
-          {busy === 'scan' ? 'Scanning Dotdigital...' : audit ? 'Re-scan Unsent campaigns' : 'Scan Unsent campaigns'}
+          {busy === 'scan' ? 'Scanning Dotdigital...' : audit ? 'Re-scan Unsent Black November campaigns' : 'Scan Unsent Black November campaigns'}
         </button>
         {progress && <p aria-live="polite" style={{ marginBottom: 0, fontSize: 13, color: '#444' }}>{progress}</p>}
         {error && <p role="alert" style={{ color: '#9f1c20', background: '#fff1f1', padding: 14, fontSize: 13, marginBottom: 0 }}>{error}</p>}
@@ -147,7 +147,7 @@ export default function DotdigitalShippingPage() {
           {[
             ['Unsent checked', audit.totalUnsent],
             ['Need updating', possible],
-            ['Already $250+*', audit.already250],
+            ['Already $200+*', audit.already200],
             ['No matching text', audit.noMatch],
           ].map(([label, value]) =>
             <div key={label} style={{ padding: 18, background: '#f7f7f7' }}>
@@ -172,12 +172,12 @@ export default function DotdigitalShippingPage() {
           </div>
           <button type="button" onClick={() => void apply()} disabled={busy !== null || !audit.canApply || results.length > 0}
             style={{ marginTop: 24, borderRadius: 0, background: busy || !audit.canApply || results.length ? '#aaa' : '#d71920', color: '#fff', padding: '15px 22px', border: 0, cursor: busy ? 'wait' : 'pointer', fontWeight: 800, fontFamily: 'Lexend, Arial, sans-serif', fontSize: 13 }}>
-            {busy === 'update' ? 'Updating campaigns...' : 'Update ' + possible + ' Unsent campaign' + (possible === 1 ? '' : 's') + ' to $250+*'}
+            {busy === 'update' ? 'Updating campaigns...' : 'Update ' + possible + ' Unsent campaign' + (possible === 1 ? '' : 's') + ' to $200+*'}
           </button>
           {!audit.canApply && <p style={{ fontSize: 13, color: '#9c3025' }}>Resolve the scan warnings before applying a bulk change.</p>}
-          {results.length > 0 && <p style={{ fontSize: 13 }}>To run the check again or retry, use Re-scan Unsent campaigns.</p>}
+          {results.length > 0 && <p style={{ fontSize: 13 }}>To run the check again or retry, use Re-scan Unsent Black November campaigns.</p>}
         </div>}
-        {possible === 0 && audit.skipped.length === 0 && <p style={{ marginTop: 22, display: 'flex', gap: 8, alignItems: 'center', color: '#16824b' }}><CheckCircle2 size={18}/> No Unsent campaigns contain the $200+* shipping heading.</p>}
+        {possible === 0 && audit.skipped.length === 0 && <p style={{ marginTop: 22, display: 'flex', gap: 8, alignItems: 'center', color: '#16824b' }}><CheckCircle2 size={18}/> No Unsent Black November campaigns contain the $250 free-shipping text.</p>}
       </div>}
 
       {results.length > 0 && <section style={{ marginTop: 18, background: '#fff', border: '1px solid #e5e5e5', padding: 'clamp(20px, 4vw, 36px)' }}>
