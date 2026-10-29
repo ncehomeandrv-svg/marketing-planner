@@ -5,7 +5,7 @@ export const OLD_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $250+*';
 export const NEW_SHIPPING_TEXT = 'FREE SHIPPING ON ELIGIBLE ORDERS $200+*';
 
 // Match free-shipping threshold amounts only; do not replace unrelated product prices.
-const SHIPPING_FIRST = /((?:free(?:\s|&nbsp;|&#160;)+(?:shipping|freight|delivery)|shipping(?:\s|&nbsp;|&#160;)+(?:is(?:\s|&nbsp;|&#160;)+)?free)[^<>\r\n.!?]{0,100}?(?:\$|&#36;|&#x24;|&dollar;|\bover\b|\borders?\b)[\s\u00a0;]*)(250)(?=(?:\.00)?(?:[+*\s]|$))/gi;
+const SHIPPING_FIRST = /((?:free(?:\s|&nbsp;|&#160;)+(?:standard(?:\s|&nbsp;|&#160;)+)?(?:shipping|freight|delivery)|shipping(?:\s|&nbsp;|&#160;)+(?:is(?:\s|&nbsp;|&#160;)+)?free)[^<>\r\n.!?]{0,100}?(?:\$|&#36;|&#x24;|&dollar;|\bover\b|\borders?\b)[\s\u00a0;]*)(250)(?=(?:\.00)?(?:[+*\s]|$))/gi;
 const SPEND_FIRST = /((?:\$|&#36;|&#x24;|&dollar;)\s*)(250)(?=(?:\+|\*|\s|&nbsp;)[^<>\r\n.!?]{0,75}?\bfree(?:\s|&nbsp;)+(?:shipping|freight|delivery)\b)/gi;
 
 export interface DotdigitalCampaign {
