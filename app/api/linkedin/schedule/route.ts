@@ -3,7 +3,7 @@ import {NextResponse} from 'next/server';
 export async function POST(request:Request){
   try{
     const body=await request.json();
-    if(body.approvalStatus!=='Approved') return NextResponse.json({error:'Jenna must approve this item before it can be scheduled.'},{status:400});
+    if(body.approvalStatus!=='Approved') return NextResponse.json({error:'John must approve this item before it can be scheduled.'},{status:400});
     if(!body.message?.trim()) return NextResponse.json({error:'LinkedIn post copy is required.'},{status:400});
     const mediaUrls=Array.isArray(body.mediaUrls)?body.mediaUrls.map((url:string)=>url.trim()).filter(Boolean):[];
     if(mediaUrls.length>20) return NextResponse.json({error:'LinkedIn supports a maximum of 20 images in an organic multi-image post.'},{status:400});

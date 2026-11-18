@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { PlannerItem } from '@/lib/types';
+import { migratePlannerItem } from '@/lib/people';
 
 const KEY = 'nce:fy27:planner-items';
 const DELETED_KEY = 'nce:fy27:deleted-item-ids';
@@ -14,7 +15,8 @@ function isBlogItem(item: PlannerItem) {
 }
 
 function normaliseItem(item: PlannerItem): PlannerItem {
-  return isBlogItem(item) ? { ...item, channel: 'Website', contentFormat: 'Blog' } : item;
+  const migrated = migratePlannerItem(item);
+  return isBlogItem(migrated) ? { ...migrated, channel: 'Website', contentFormat: 'Blog' } : migrated;
 }
 
 function workflowNotification(previous: PlannerItem | undefined, item: PlannerItem) {
@@ -23,18 +25,18 @@ function workflowNotification(previous: PlannerItem | undefined, item: PlannerIt
   if (isBlog) return null;
 
   if (item.status === 'Brief Ready' && previous.status !== 'Brief Ready') {
-    return { person: item.assetCreator || 'Kieren', title: `Brief ready: ${item.title}`, message: `${item.briefOwner || 'Jenna'} marked the brief ready for production.` };
+    return { person: item.assetCreator || 'Kieren', title: `Brief ready: ${item.title}`, message: `${item.briefOwner || 'John'} marked the brief ready for production.` };
   }
   if (item.status === 'Ready for Review' && previous.status !== 'Ready for Review') {
-    return { person: item.approver || 'Jenna', title: `Ready for review: ${item.title}`, message: `${item.assetCreator || item.owner || 'Kieren'} submitted this item for review.` };
+    return { person: item.approver || 'John', title: `Ready for review: ${item.title}`, message: `${item.assetCreator || item.owner || 'Kieren'} submitted this item for review.` };
   }
   const changesRequired = item.status === 'Changes Required' && previous.status !== 'Changes Required';
   const changesRequested = item.approvalStatus === 'Changes requested' && previous.approvalStatus !== 'Changes requested';
   if (changesRequired || changesRequested) {
-    return { person: item.assetCreator || 'Kieren', title: `Changes requested: ${item.title}`, message: `${item.approver || 'Jenna'} requested revisions.` };
+    return { person: item.assetCreator || 'Kieren', title: `Changes requested: ${item.title}`, message: `${item.approver || 'John'} requested revisions.` };
   }
   if (item.approvalStatus === 'Approved' && previous.approvalStatus !== 'Approved') {
-    return { person: item.publisher || 'Kieren', title: `Approved: ${item.title}`, message: `${item.approver || 'Jenna'} approved this item for scheduling.` };
+    return { person: item.publisher || 'Kieren', title: `Approved: ${item.title}`, message: `${item.approver || 'John'} approved this item for scheduling.` };
   }
   return null;
 }

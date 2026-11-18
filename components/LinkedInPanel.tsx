@@ -52,7 +52,7 @@ export default function LinkedInPanel({item,onUpdate}:{item:PlannerItem;onUpdate
         {sourceUrl&&<a className="source-link" href={sourceUrl} target="_blank" rel="noreferrer"><ExternalLink size={15}/>Open original asset source</a>}
       </div>
 
-      <div className="integration-actions"><button className="btn secondary" type="button" onClick={saveDraft}>Save draft</button><button className="btn primary" type="button" onClick={()=>void schedule()} disabled={loading||!copy.trim()||mediaUrls.length>20||item.approvalStatus!=='Approved'}><Send size={16}/>Schedule LinkedIn post</button>{item.approvalStatus!=='Approved'&&<small>Jenna must approve this item first.</small>}{mediaUrls.length>20&&<small>LinkedIn supports a maximum of 20 images.</small>}</div>
+      <div className="integration-actions"><button className="btn secondary" type="button" onClick={saveDraft}>Save draft</button><button className="btn primary" type="button" onClick={()=>void schedule()} disabled={loading||!copy.trim()||mediaUrls.length>20||item.approvalStatus!=='Approved'}><Send size={16}/>Schedule LinkedIn post</button>{item.approvalStatus!=='Approved'&&<small>John must approve this item first.</small>}{mediaUrls.length>20&&<small>LinkedIn supports a maximum of 20 images.</small>}</div>
     </>}
     {message&&<p className="integration-message">{message}</p>}
   </section>

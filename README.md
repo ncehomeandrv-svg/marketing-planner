@@ -11,7 +11,7 @@ MICROSOFT_CLIENT_ID=
 MICROSOFT_CLIENT_SECRET=
 MICROSOFT_TENANT_ID=
 MICROSOFT_REDIRECT_URI=https://nce-marketing-planner.vercel.app/api/microsoft/callback
-JENNA_NOTIFICATION_EMAIL=jhall@nce.com.au
+JOHN_NOTIFICATION_EMAIL=jpace@nce.com.au
 KIEREN_NOTIFICATION_EMAIL=kbinion@nce.com.au
 ```
 
@@ -47,7 +47,7 @@ Workflow emails now include the campaign title, channel, segment, workflow stage
 
 ## V16.8.2 notification rules
 
-Recurring Blog items do not send Outlook workflow emails. LinkedIn workflow emails are enabled: Jenna owns the brief and approval, Kieren is the automatic asset creator, and Jenna remains the publisher. Blog items remain owned by Kieren and use `Not required` approval.
+Recurring Blog items do not send Outlook workflow emails. LinkedIn workflow emails are enabled: John owns the brief and approval, Kieren is the automatic asset creator, and John remains the publisher. Blog items remain owned by Kieren and use `Not required` approval.
 
 
 ## V17 campaign controls
@@ -98,7 +98,7 @@ Workflow notification emails are triggered server-side after a successful shared
 
 
 ## V17.5.3 LinkedIn workflow
-LinkedIn workflow emails are enabled. Jenna is the brief owner, approver and publisher. Kieren is automatically assigned as the asset creator and card owner. Existing saved LinkedIn cards are normalised to this ownership model on load.
+LinkedIn workflow emails are enabled. John is the brief owner, approver and publisher. Kieren is automatically assigned as the asset creator and card owner. Existing saved LinkedIn cards are normalised to this ownership model on load.
 
 ## V17.5.4 Meta media upload fix
 - Sends Facebook and Instagram media creation fields as form-encoded Graph API requests.

@@ -16,8 +16,8 @@ const important = (
   segment:'Retail',
   status:'Scheduled',
   owner:'Kieren',
-  accountable:'Jenna',
-  approver:'Jenna',
+  accountable:'John',
+  approver:'John',
   approvalStatus:'Not required',
   description,
   priority:'Normal',
@@ -140,10 +140,10 @@ function contentItem(
     segment,
     status:'Brief Required',
     owner:'Kieren',
-    briefOwner:'Jenna',
+    briefOwner:'John',
     assetCreator:'Kieren',
-    accountable:'Jenna',
-    approver:'Jenna',
+    accountable:'John',
+    approver:'John',
     publisher:'Kieren',
     approvalStatus:'Awaiting approval',
     description,
@@ -161,8 +161,8 @@ function monthlyContent(year:number, monthIndex:number):PlannerItem[] {
   const items:PlannerItem[]=[];
 
   items.push({
-    id:`${code}-kickoff`,title:`${monthName} Content & Campaign Kick-off`,type:'ticket',date:`${code}-01`,channel:'Operations',segment:'Multiple',status:'Brief Required',owner:'Kieren',briefOwner:'Jenna',assetCreator:'Kieren',accountable:'Jenna',approver:'Jenna',publisher:'Kieren',approvalStatus:'Awaiting approval',priority:'High',quarter:quarterFor(new Date(year,monthIndex,1)),source:'Monthly Content Plan',attachments:[],
-    description:'Jenna uploads the month’s briefs and supporting documents here. Kieren then creates and uploads EDM, social and campaign assets for revision and approval. Confirm offers, stock, freight considerations, owners and approval deadlines before production starts.'
+    id:`${code}-kickoff`,title:`${monthName} Content & Campaign Kick-off`,type:'ticket',date:`${code}-01`,channel:'Operations',segment:'Multiple',status:'Brief Required',owner:'Kieren',briefOwner:'John',assetCreator:'Kieren',accountable:'John',approver:'John',publisher:'Kieren',approvalStatus:'Awaiting approval',priority:'High',quarter:quarterFor(new Date(year,monthIndex,1)),source:'Monthly Content Plan',attachments:[],
+    description:'John uploads the month’s briefs and supporting documents here. Kieren then creates and uploads EDM, social and campaign assets for revision and approval. Confirm offers, stock, freight considerations, owners and approval deadlines before production starts.'
   });
 
   for(let i=1;i<=4;i++){
@@ -171,8 +171,8 @@ function monthlyContent(year:number, monthIndex:number):PlannerItem[] {
     const linkedin=nthWeekday(year,monthIndex,2,i);
     items.push(contentItem(`${code}-retail-edm-${i}`,`Retail EDM ${i} of 4`,retail,'Email','Retail',`Weekly retail EDM for ${monthName}. Upload copy, creative, links and test proofs for revision and approval before deployment.`,'High'));
     items.push(contentItem(`${code}-social-${i}`,`Organic Social Post ${i} of 4`,social,'Organic','Retail',`Weekly organic social post for ${monthName}. Attach final artwork/video, caption and platform notes for approval.`));
-    const linkedInItem=contentItem(`${code}-linkedin-${i}`,`LinkedIn Post ${i} of 4`,linkedin,'LinkedIn','Multiple',`Weekly LinkedIn post for ${monthName}, mapped to the FY27 content pillars. Jenna owns the brief and approval. Kieren creates the assets, and Jenna publishes the approved post.`);
-    linkedInItem.briefOwner='Jenna'; linkedInItem.assetCreator='Kieren'; linkedInItem.owner='Kieren'; linkedInItem.accountable='Jenna'; linkedInItem.approver='Jenna'; linkedInItem.publisher='Jenna'; linkedInItem.approvalStatus='Awaiting approval';
+    const linkedInItem=contentItem(`${code}-linkedin-${i}`,`LinkedIn Post ${i} of 4`,linkedin,'LinkedIn','Multiple',`Weekly LinkedIn post for ${monthName}, mapped to the FY27 content pillars. John owns the brief and approval. Kieren creates the assets, and John publishes the approved post.`);
+    linkedInItem.briefOwner='John'; linkedInItem.assetCreator='Kieren'; linkedInItem.owner='Kieren'; linkedInItem.accountable='John'; linkedInItem.approver='John'; linkedInItem.publisher='John'; linkedInItem.approvalStatus='Awaiting approval';
     items.push(linkedInItem);
   }
 
